@@ -1,0 +1,33 @@
+# Carbon Padel bot: everything starts with one command:  docker compose up -d
+#   waha = the WhatsApp connection (linked device on the bot's number)
+#   bot  = the Python logic (tag-all on match alerts + scam moderation)
+services:
+  waha:
+    image: devlikeapro/waha:noweb
+    container_name: carbon-waha
+    restart: unless-stopped
+    ports:
+      - "3000:3000"            # only needed to scan the QR code / check status; can be firewalled afterwards
+    environment:
+      - WAHA_API_KEY=${WAHA_API_KEY}
+      - WAHA_DASHBOARD_ENABLED=true
+      - WAHA_DASHBOARD_USERNAME=admin
+      - WAHA_DASHBOARD_PASSWORD=${WAHA_API_KEY}
+      - WHATSAPP_DEFAULT_ENGINE=NOWEB
+      - WHATSAPP_HOOK_URL=http://bot:5000/webhook
+      - WHATSAPP_HOOK_EVENTS=message,message.any
+    volumes:
+      - ./waha-sessions:/app/.sessions   # the WhatsApp login lives here: keep it private, back it up
+
+  bot:
+    build: .
+    container_name: carbon-bot
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - WAHA_URL=http://waha:3000
+      - MOD_LOG=/app/logs/moderation_log.jsonl
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      - waha

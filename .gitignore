@@ -1,0 +1,5 @@
+.env
+waha-sessions/
+logs/
+moderation_log.jsonl
+__pycache__/
